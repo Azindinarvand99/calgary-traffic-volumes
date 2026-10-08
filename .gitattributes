@@ -1,0 +1,3 @@
+# Generated data is written with LF endings; keep it that way on every platform
+# so the monthly job never sees a line-ending-only diff.
+* text=auto eol=lf

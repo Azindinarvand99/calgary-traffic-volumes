@@ -1,0 +1,44 @@
+name: Update traffic volume data
+
+on:
+  schedule:
+    - cron: "17 9 1 * *" # 09:17 UTC on the 1st of every month
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Download and harmonise
+        env:
+          SOCRATA_APP_TOKEN: ${{ secrets.SOCRATA_APP_TOKEN }} # optional
+        run: python scripts/build_traffic_volumes.py
+
+      - name: Commit data if it changed
+        run: |
+          if [ -z "$(git status --porcelain -- data)" ]; then
+            echo "No changes in data/ - nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          git commit -m "Update traffic volume data ($(date -u +%Y-%m-%d))"
+          git push
